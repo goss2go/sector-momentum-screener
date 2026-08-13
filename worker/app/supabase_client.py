@@ -21,9 +21,15 @@ def get_client() -> Client:
         key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
         # TEMPORARY DIAGNOSTIC -- remove once the "Invalid API key" issue
         # is resolved. Prints shape/length info only, never the full key.
+        import re
+        has_whitespace = key != key.strip()
+        dot_count = key.count(".")
+        valid_charset = bool(re.fullmatch(r"[A-Za-z0-9\-_.]*", key))
         print(
             f"DEBUG supabase_url={url!r} "
-            f"key_len={len(key)} key_repr={key[:8]!r}...{key[-8:]!r}",
+            f"key_len={len(key)} key_repr={key[:8]!r}...{key[-8:]!r} "
+            f"dot_count={dot_count} has_whitespace={has_whitespace} "
+            f"valid_charset={valid_charset}",
             file=sys.stderr,
             flush=True,
         )

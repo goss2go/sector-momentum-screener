@@ -15,10 +15,25 @@ from scipy.stats import norm
 
 from . import config as cfg
 
+# Yahoo Finance increasingly blocks requests that don't look like a real
+# browser -- this is especially common from cloud/datacenter IPs (Railway,
+# AWS, etc.), even when the exact same code works fine locally or in
+# Colab. curl_cffi's impersonate mode makes the underlying TLS/HTTP
+# fingerprint match a real Chrome install, which is yfinance's own
+# currently-recommended workaround. This is NOT a guaranteed fix --
+# Yahoo can still tighten blocking further -- but it's the best available
+# option short of a paid market-data API.
+_session = None
 
-# ----------------------------------------------------------------------
-# TECHNICALS (unchanged from the Colab version)
-# ----------------------------------------------------------------------
+
+def _get_session():
+    global _session
+    if _session is None:
+        from curl_cffi import requests as cffi_requests
+        _session = cffi_requests.Session(impersonate="chrome")
+    return _session
+
+
 def compute_rsi(closes, period=cfg.RSI_PERIOD):
     delta = closes.diff()
     gain = delta.clip(lower=0)
@@ -39,7 +54,10 @@ def compute_macd_hist(closes):
 
 def fetch_price_history(ticker, period="1y"):
     import yfinance as yf
-    df = yf.download(ticker, period=period, progress=False, auto_adjust=True)
+    df = yf.download(
+        ticker, period=period, progress=False, auto_adjust=True,
+        session=_get_session(),
+    )
     if df.empty or len(df) < cfg.SMA_TREND + cfg.SMA_SLOPE_LOOKBACK:
         return None
     df = df[["Close"]].rename(columns={"Close": "close"})
@@ -167,7 +185,7 @@ def bs_put_delta_and_pop(S, K, T, r, sigma):
 def get_risk_free_rate():
     try:
         import yfinance as yf
-        irx = yf.Ticker("^IRX").history(period="5d")["Close"].iloc[-1]
+        irx = yf.Ticker("^IRX", session=_get_session()).history(period="5d")["Close"].iloc[-1]
         return round(irx / 100.0, 4)
     except Exception:
         return cfg.RISK_FREE_RATE
@@ -175,7 +193,7 @@ def get_risk_free_rate():
 
 def fetch_put_chains(ticker, dte_min, dte_max):
     import yfinance as yf
-    tk = yf.Ticker(ticker)
+    tk = yf.Ticker(ticker, session=_get_session())
     try:
         spot = tk.fast_info["lastPrice"]
     except Exception:

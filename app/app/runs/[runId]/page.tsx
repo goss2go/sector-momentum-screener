@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabaseServer";
 import RunScanButton from "../../RunScanButton";
+import StatusPoller from "./StatusPoller";
 
 export default async function RunDetailPage({ params }: { params: { runId: string } }) {
   const supabase = createClient();
@@ -35,7 +36,10 @@ export default async function RunDetailPage({ params }: { params: { runId: strin
       </p>
 
       {run.status === "running" && (
-        <p className="text-amber-400 mb-4">Scan in progress -- refresh to check for results.</p>
+        <>
+          <StatusPoller status={run.status} />
+          <p className="text-amber-400 mb-4">Scan in progress -- this page will update automatically.</p>
+        </>
       )}
       {run.status === "failed" && (
         <p className="text-red-400 mb-4">Scan failed: {run.error_message}</p>

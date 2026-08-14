@@ -4,5 +4,6 @@ pydantic==2.9.2
 pandas==2.2.3
 numpy==2.1.2
 scipy==1.14.1
-yfinance==0.2.44
+yfinance>=0.2.55
+curl_cffi>=0.7.0
 supabase==2.9.1

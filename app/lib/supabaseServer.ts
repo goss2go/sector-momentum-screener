@@ -15,9 +15,15 @@ export function createClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          );
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
+          } catch {
+            // setAll was called from a Server Component, which can't
+            // write cookies -- safe to ignore here because
+            // middleware.ts refreshes the session on every request.
+          }
         },
       },
     }
